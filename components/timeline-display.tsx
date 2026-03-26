@@ -28,94 +28,118 @@ export default function TimelineDisplay({
     );
   }
 
+  const completedCount = steps.filter(s => s.status === 'completed').length;
+  const progressPercentage = Math.round((completedCount / steps.length) * 100);
+
   return (
-    <div className="w-full py-12 px-6 bg-background" style={{ backgroundColor: '#ffffff' }}>
-      <div className="relative max-w-6xl mx-auto">
-        {/* Main timeline line */}
-        <div
-          className="absolute top-12 left-0 right-0 h-1"
-          style={{
-            backgroundColor: lineColor,
-          }}
-        />
+    <div className="w-full py-16 px-8 bg-white">
+      <div className="max-w-7xl mx-auto">
+        {/* Timeline Container */}
+        <div className="relative mb-16">
+          {/* Main horizontal line */}
+          <div 
+            className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2"
+            style={{ backgroundColor: lineColor }}
+          />
 
-        {/* Steps container */}
-        <div className="relative space-y-0">
-          {steps.map((step, index) => {
-            const isAbove = index % 2 === 0;
-            const isCompleted = step.status === 'completed';
+          {/* Steps */}
+          <div className="relative flex justify-between">
+            {steps.map((step, index) => {
+              const isLeft = index % 2 === 0;
+              const isCompleted = step.status === 'completed';
 
-            return (
-              <div
-                key={step.id}
-                className={`flex ${isAbove ? 'flex-col' : 'flex-col-reverse'} items-center mb-16`}
-              >
-                {/* Box content */}
-                <div
-                  className={`w-48 rounded-lg border-2 p-4 text-center ${
-                    isCompleted
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-300 bg-gray-50'
-                  } ${isAbove ? 'mb-6' : 'mt-6'}`}
-                  style={{
-                    borderColor: isCompleted ? '#22c55e' : '#d1d5db',
-                    backgroundColor: isCompleted ? '#f0fdf4' : '#f9fafb',
-                  }}
-                >
-                  <h3
-                    className="font-bold text-sm mb-2"
-                    style={{ color: lineColor }}
+              return (
+                <div key={step.id} className="flex flex-col items-center flex-1">
+                  {/* Box - alternates above/below */}
+                  <div 
+                    className={`flex flex-col items-center ${isLeft ? 'mb-8' : 'mt-8'}`}
                   >
-                    {step.title}
-                  </h3>
-                  <p className="text-xs text-gray-600">{step.description}</p>
-                </div>
+                    <div
+                      className={`w-44 rounded-lg border-2 p-4 text-center transition-all ${
+                        isCompleted
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-gray-300 bg-gray-50'
+                      }`}
+                      style={{
+                        borderColor: isCompleted ? '#22c55e' : '#d1d5db',
+                        backgroundColor: isCompleted ? '#f0fdf4' : '#f9fafb',
+                      }}
+                    >
+                      <h3 
+                        className="font-bold text-sm mb-1"
+                        style={{ color: lineColor }}
+                      >
+                        {step.title}
+                      </h3>
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        {step.description}
+                      </p>
+                    </div>
 
-                {/* Status indicator and vertical line */}
-                <div className="flex flex-col items-center">
-                  {/* Vertical connector line */}
-                  <div
-                    className="w-1 h-6"
-                    style={{
-                      backgroundColor: lineColor,
-                    }}
-                  />
+                    {/* Vertical bold connecting line */}
+                    <div
+                      className="w-1 flex-1"
+                      style={{
+                        backgroundColor: lineColor,
+                        minHeight: '2rem',
+                      }}
+                    />
+                  </div>
 
-                  {/* Circle indicator */}
+                  {/* Step indicator circle on main line */}
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center border-4 z-10 bg-white"
+                    className="w-12 h-12 rounded-full flex items-center justify-center border-4 bg-white z-10 flex-shrink-0 transition-all"
                     style={{
                       borderColor: lineColor,
+                      boxShadow: `0 0 0 3px white`,
                     }}
                   >
                     {isCompleted ? (
                       <Check
-                        size={20}
-                        style={{ color: lineColor }}
+                        size={24}
                         strokeWidth={3}
+                        style={{ color: lineColor }}
                       />
                     ) : (
                       <Clock
-                        size={20}
+                        size={24}
                         style={{ color: '#9ca3af' }}
                       />
                     )}
                   </div>
 
-                  {/* Vertical connector line */}
-                  {index < steps.length - 1 && (
+                  {/* Vertical bold connecting line after indicator */}
+                  {!isLeft && (
                     <div
-                      className="w-1"
+                      className="w-1 flex-1"
                       style={{
-                        height: '4rem',
                         backgroundColor: lineColor,
+                        minHeight: '2rem',
                       }}
                     />
                   )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mt-12 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-gray-700">
+              Progress: {progressPercentage}% complete ({completedCount}/{steps.length} phases)
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div
+              className="h-full transition-all duration-300"
+              style={{
+                width: `${progressPercentage}%`,
+                backgroundColor: lineColor,
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>
