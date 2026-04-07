@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas';
 import { Download, Home, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { GitHubStarButton } from '@/components/github-star-button';
 
 export default function MilestoneBuilderPage() {
   const [isExporting, setIsExporting] = useState(false);
@@ -13,7 +14,9 @@ export default function MilestoneBuilderPage() {
   const handleExportPNG = async () => {
     try {
       setIsExporting(true);
-      const canvas = document.querySelector('[style*="flex"]') as HTMLElement;
+      const canvas =
+        (document.querySelector('#milestone-canvas-export .react-flow') as HTMLElement) ||
+        (document.getElementById('milestone-canvas-export') as HTMLElement | null);
 
       if (!canvas) {
         alert('Canvas not found');
@@ -56,12 +59,7 @@ export default function MilestoneBuilderPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <a href="https://github.com/codehamster69/mileflow-xe" target="_blank" rel="noreferrer">
-            <Button variant="outline" className="gap-2">
-              <Star size={18} />
-              Star Repository
-            </Button>
-          </a>
+          <GitHubStarButton className="rounded-md" />
           <Button
             onClick={handleExportPNG}
             disabled={isExporting}

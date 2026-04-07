@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { ArrowRight, Star } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { GitHubStarButton } from '@/components/github-star-button';
 
 export default function Home() {
   return (
@@ -10,12 +10,7 @@ export default function Home() {
           <img src="/icon.svg" alt="MileFlow logo" className="h-8 w-8" />
           <span className="text-lg font-bold text-primary">MileFlow</span>
         </div>
-        <a href="https://github.com/codehamster69/mileflow-xe" target="_blank" rel="noreferrer">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Star size={16} />
-            Star on GitHub
-          </Button>
-        </a>
+        <GitHubStarButton />
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-14 text-center space-y-12">
