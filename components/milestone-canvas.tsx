@@ -219,6 +219,19 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
     redoRef.current = handleRedo;
   }, [handleUndo, handleRedo]);
 
+  const handleFocusFlow = useCallback(() => {
+    if (!reactFlowRef.current) return;
+
+    reactFlowRef.current.fitView({
+      duration: 500,
+      padding: 0.2,
+      includeHiddenNodes: true,
+      minZoom: 0.08,
+      maxZoom: 1.4,
+    });
+    setIsFocusRecommended(false);
+  }, []);
+
   // Set up keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -292,19 +305,6 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
     },
     [shouldRecommendFocus]
   );
-
-  const handleFocusFlow = useCallback(() => {
-    if (!reactFlowRef.current) return;
-
-    reactFlowRef.current.fitView({
-      duration: 500,
-      padding: 0.2,
-      includeHiddenNodes: true,
-      minZoom: 0.08,
-      maxZoom: 1.4,
-    });
-    setIsFocusRecommended(false);
-  }, []);
 
   const handleSelectionChange = useCallback(
     ({ nodes: selectedNodes, edges: selectedEdges }: { nodes: Node[]; edges: Edge[] }) => {
