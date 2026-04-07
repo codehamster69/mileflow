@@ -69,7 +69,7 @@ export function MilestoneEditorPanel({
 
   if (!selectedNode) {
     return (
-      <div className="w-72 bg-white border-l border-gray-200 p-6 flex flex-col h-full shadow-sm">
+      <div className="w-full lg:w-72 lg:min-w-72 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-4 lg:p-6 flex flex-col h-auto lg:h-full max-h-[45vh] lg:max-h-none shadow-sm overflow-y-auto">
         <h2 className="text-xl font-bold text-gray-900 mb-6">Milestone Editor</h2>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -91,7 +91,7 @@ export function MilestoneEditorPanel({
   }
 
   return (
-    <div className="w-72 bg-white border-l border-gray-200 p-6 flex flex-col h-full shadow-sm overflow-y-auto">
+    <div className="w-full lg:w-72 lg:min-w-72 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-4 lg:p-6 flex flex-col h-auto lg:h-full max-h-[45vh] lg:max-h-none shadow-sm overflow-y-auto">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Edit Milestone</h2>
         <button

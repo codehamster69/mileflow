@@ -386,8 +386,8 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
   );
 
   return (
-    <div className="flex h-full w-full bg-gradient-to-br from-blue-50 to-indigo-50">
-      <div id="milestone-canvas-export" className="flex-1 relative">
+    <div className="flex h-full w-full flex-col lg:flex-row bg-gradient-to-br from-blue-50 to-indigo-50">
+      <div id="milestone-canvas-export" className="flex-1 relative min-h-[55vh] lg:min-h-0">
         {/* Undo/Redo Toolbar */}
         <div
           className="absolute top-4 left-4 z-50 flex gap-2 bg-white rounded-lg shadow-md p-2 border border-gray-200"
