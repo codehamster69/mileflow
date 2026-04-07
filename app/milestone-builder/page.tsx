@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { MilestoneCanvas } from '@/components/milestone-canvas';
 import html2canvas from 'html2canvas';
-import { Download, Home } from 'lucide-react';
+import { Download, Home, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { GitHubStarButton } from '@/components/github-star-button';
