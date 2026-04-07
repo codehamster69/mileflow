@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Node } from 'reactflow';
@@ -33,6 +33,21 @@ export function MilestoneEditorPanel({
   const [description, setDescription] = useState(selectedNode?.data.description || '');
   const [color, setColor] = useState(selectedNode?.data.color || PRESET_COLORS[0]);
   const [status, setStatus] = useState<'completed' | 'pending'>(selectedNode?.data.status || 'pending');
+
+  // Sync state with selectedNode changes
+  useEffect(() => {
+    if (selectedNode) {
+      setTitle(selectedNode.data.title);
+      setDescription(selectedNode.data.description);
+      setColor(selectedNode.data.color);
+      setStatus(selectedNode.data.status);
+    } else {
+      setTitle('');
+      setDescription('');
+      setColor(PRESET_COLORS[0]);
+      setStatus('pending');
+    }
+  }, [selectedNode]);
 
   const handleUpdate = () => {
     if (!selectedNode) return;

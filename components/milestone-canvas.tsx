@@ -84,6 +84,8 @@ export function MilestoneCanvas() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node<MilestoneData> | null>(null);
 
+  const memoizedNodeTypes = useMemo(() => nodeTypes, []);
+
   const onConnect = useCallback(
     (connection: Connection) => {
       setEdges((eds) => addEdge({ ...connection, animated: true }, eds));
@@ -158,7 +160,7 @@ export function MilestoneCanvas() {
           onConnect={onConnect}
           onNodeClick={handleNodeClick}
           onPaneClick={handlePaneClick}
-          nodeTypes={nodeTypes}
+          nodeTypes={memoizedNodeTypes}
           fitView
         >
           <Background />
