@@ -624,6 +624,21 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
           />
         )}
 
+        <button
+          type="button"
+          onClick={handleFocusFlow}
+          className={`absolute top-4 right-4 z-50 flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm font-medium shadow-md transition-colors ${
+            isFocusRecommended
+              ? 'border-blue-300 text-blue-700 hover:bg-blue-50'
+              : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+          }`}
+          title="Focus your flow (F)"
+          aria-label="Focus diagram in viewport"
+        >
+          <LocateFixed size={16} />
+          Focus flow
+        </button>
+
         <ReactFlow
           nodes={nodes.map((node) => ({ ...node, type: 'milestone' }))}
           edges={edges.map((edge) => ({
