@@ -14,25 +14,41 @@ export default function MilestoneBuilderPage() {
   const handleExportPNG = async () => {
     try {
       setIsExporting(true);
-      const canvas =
-        (document.querySelector('#milestone-canvas-export .react-flow') as HTMLElement) ||
-        (document.getElementById('milestone-canvas-export') as HTMLElement | null);
+      const canvas = document.getElementById('milestone-canvas-export') as HTMLElement | null;
 
       if (!canvas) {
         alert('Canvas not found');
         return;
       }
 
-      const image = await html2canvas(canvas, {
-        backgroundColor: '#f0f9ff',
-        scale: 2,
-        logging: false,
-      });
+      const controls = canvas.querySelectorAll(
+        '.react-flow__controls, .react-flow__minimap, .react-flow__panel, .react-flow__attribution'
+      );
+      controls.forEach((el) => ((el as HTMLElement).style.visibility = 'hidden'));
+      try {
+        const image = await html2canvas(canvas, {
+          backgroundColor: '#f0f9ff',
+          scale: 2,
+          logging: false,
+          useCORS: true,
+          onclone: (doc) => {
+            doc
+              .querySelectorAll(
+                '.react-flow__controls, .react-flow__minimap, .react-flow__panel, .react-flow__attribution'
+              )
+              .forEach((el) => {
+                (el as HTMLElement).style.display = 'none';
+              });
+          },
+        });
 
-      const link = document.createElement('a');
-      link.href = image.toDataURL('image/png');
-      link.download = `milestone-flow-${new Date().toISOString().split('T')[0]}.png`;
-      link.click();
+        const link = document.createElement('a');
+        link.href = image.toDataURL('image/png');
+        link.download = `milestone-flow-${new Date().toISOString().split('T')[0]}.png`;
+        link.click();
+      } finally {
+        controls.forEach((el) => ((el as HTMLElement).style.visibility = 'visible'));
+      }
     } catch (error) {
       console.error('Export failed:', error);
       alert('Failed to export. Please try again.');
@@ -88,7 +104,7 @@ export default function MilestoneBuilderPage() {
         <p className="font-semibold text-gray-900 mb-1">Tips:</p>
         <ul className="text-xs space-y-1 text-gray-600">
           <li>• Click milestones to edit them</li>
-          <li>• Drag to move, scroll to zoom</li>
+          <li>• Use hand/pointer tools to switch pan vs drag-select</li>
           <li>• Connect nodes by dragging handles</li>
         </ul>
       </div>

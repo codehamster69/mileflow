@@ -16,7 +16,7 @@ import 'reactflow/dist/style.css';
 import { MilestoneNode, type MilestoneData } from './milestone-node';
 import { MilestoneEditorPanel } from './milestone-editor-panel';
 import { CommandHistory, type CommandState } from '@/lib/command-history';
-import { Undo2, Redo2, Plus, Trash2 } from 'lucide-react';
+import { Undo2, Redo2, Plus, Trash2, Hand, MousePointer } from 'lucide-react';
 
 const nodeTypes = {
   milestone: MilestoneNode,
@@ -87,6 +87,7 @@ export function MilestoneCanvas() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
+  const [interactionMode, setInteractionMode] = useState<'pan' | 'select'>('pan');
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const historyRef = useRef(new CommandHistory());
@@ -261,6 +262,27 @@ export function MilestoneCanvas() {
         {/* Undo/Redo Toolbar */}
         <div className="absolute top-4 left-4 z-50 flex gap-2 bg-white rounded-lg shadow-md p-2 border border-gray-200">
           <button
+            onClick={() => setInteractionMode('pan')}
+            className={`p-2 rounded transition-colors ${
+              interactionMode === 'pan' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100 text-gray-700'
+            }`}
+            title="Pan mode: drag to move canvas"
+            aria-label="Pan mode"
+          >
+            <Hand size={20} />
+          </button>
+          <button
+            onClick={() => setInteractionMode('select')}
+            className={`p-2 rounded transition-colors ${
+              interactionMode === 'select' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100 text-gray-700'
+            }`}
+            title="Select mode: drag to select multiple items"
+            aria-label="Select mode"
+          >
+            <MousePointer size={20} />
+          </button>
+          <div className="w-px bg-gray-200" />
+          <button
             onClick={handleAddNode}
             className="p-2 rounded hover:bg-gray-100 transition-colors"
             title="Add milestone"
@@ -301,14 +323,21 @@ export function MilestoneCanvas() {
 
         <ReactFlow
           nodes={nodes.map((node) => ({ ...node, type: 'milestone' }))}
-          edges={edges}
+          edges={edges.map((edge) => ({
+            ...edge,
+            style: selectedEdgeIds.includes(edge.id)
+              ? { stroke: '#2563eb', strokeWidth: 3 }
+              : { stroke: '#64748b', strokeWidth: 2 },
+          }))}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={handleNodeClick}
           onPaneClick={handlePaneClick}
           onSelectionChange={handleSelectionChange}
-          selectionOnDrag
+          selectionOnDrag={interactionMode === 'select'}
+          panOnDrag={interactionMode === 'pan'}
+          selectNodesOnDrag={interactionMode === 'select'}
           multiSelectionKeyCode={['Meta', 'Control', 'Shift']}
           nodeTypes={nodeTypes}
           fitView
