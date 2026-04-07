@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas';
 import { Download, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { GitHubStarButton } from '@/components/github-star-button';
 
 export default function MilestoneBuilderPage() {
   const [isExporting, setIsExporting] = useState(false);
@@ -13,7 +14,9 @@ export default function MilestoneBuilderPage() {
   const handleExportPNG = async () => {
     try {
       setIsExporting(true);
-      const canvas = document.querySelector('[style*="flex"]') as HTMLElement;
+      const canvas =
+        (document.querySelector('#milestone-canvas-export .react-flow') as HTMLElement) ||
+        (document.getElementById('milestone-canvas-export') as HTMLElement | null);
 
       if (!canvas) {
         alert('Canvas not found');
@@ -49,10 +52,14 @@ export default function MilestoneBuilderPage() {
               Home
             </Button>
           </Link>
-          <h1 className="text-xl font-bold text-gray-900">Milestone Flow Diagram</h1>
+          <div className="flex items-center gap-2">
+            <img src="/icon.svg" alt="MileFlow logo" className="h-7 w-7" />
+            <h1 className="text-xl font-bold text-gray-900">MileFlow</h1>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
+          <GitHubStarButton className="rounded-md" />
           <Button
             onClick={handleExportPNG}
             disabled={isExporting}
@@ -72,6 +79,12 @@ export default function MilestoneBuilderPage() {
 
       {/* Help Text */}
       <div className="absolute bottom-4 left-4 text-sm text-gray-600 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200 max-w-xs">
+        <p className="text-xs text-gray-500 mb-1">
+          Credits:{' '}
+          <a href="https://github.com/codehamster69" target="_blank" rel="noreferrer" className="font-semibold hover:underline">
+            @codehamster69
+          </a>
+        </p>
         <p className="font-semibold text-gray-900 mb-1">Tips:</p>
         <ul className="text-xs space-y-1 text-gray-600">
           <li>• Click milestones to edit them</li>

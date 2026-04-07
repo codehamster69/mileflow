@@ -12,6 +12,7 @@ interface MilestoneEditorPanelProps {
   onUpdateNode: (node: Node<MilestoneData>) => void;
   onAddNode: () => void;
   onDeleteNode: () => void;
+  selectedCount: number;
 }
 
 const PRESET_COLORS = [
@@ -28,6 +29,7 @@ export function MilestoneEditorPanel({
   onUpdateNode,
   onAddNode,
   onDeleteNode,
+  selectedCount,
 }: MilestoneEditorPanelProps) {
   const [title, setTitle] = useState(selectedNode?.data.title || '');
   const [description, setDescription] = useState(selectedNode?.data.description || '');
@@ -49,7 +51,7 @@ export function MilestoneEditorPanel({
     }
   }, [selectedNode]);
 
-  const handleUpdate = () => {
+  const handleUpdate = (overrides?: Partial<MilestoneData>) => {
     if (!selectedNode) return;
 
     onUpdateNode({
@@ -60,6 +62,7 @@ export function MilestoneEditorPanel({
         description,
         color,
         status,
+        ...overrides,
       },
     });
   };
@@ -71,6 +74,12 @@ export function MilestoneEditorPanel({
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-gray-500 mb-4">Select a milestone to edit</p>
+            {selectedCount > 0 && (
+              <Button onClick={onDeleteNode} variant="destructive" className="gap-2 mb-4">
+                <X size={18} />
+                Delete Selected ({selectedCount})
+              </Button>
+            )}
             <Button onClick={onAddNode} className="gap-2">
               <Plus size={18} />
               Add Milestone
@@ -127,7 +136,7 @@ export function MilestoneEditorPanel({
             <button
               onClick={() => {
                 setStatus('completed');
-                handleUpdate();
+                handleUpdate({ status: 'completed' });
               }}
               className={`flex-1 py-2 px-3 rounded-lg font-medium transition-colors ${
                 status === 'completed'
@@ -140,7 +149,7 @@ export function MilestoneEditorPanel({
             <button
               onClick={() => {
                 setStatus('pending');
-                handleUpdate();
+                handleUpdate({ status: 'pending' });
               }}
               className={`flex-1 py-2 px-3 rounded-lg font-medium transition-colors ${
                 status === 'pending'
@@ -162,7 +171,7 @@ export function MilestoneEditorPanel({
                 key={presetColor}
                 onClick={() => {
                   setColor(presetColor);
-                  handleUpdate();
+                  handleUpdate({ color: presetColor });
                 }}
                 className={`w-12 h-12 rounded-lg border-2 transition-all ${
                   color === presetColor ? 'border-gray-900 shadow-md' : 'border-gray-300'
