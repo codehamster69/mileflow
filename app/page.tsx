@@ -13,31 +13,16 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Timeline Builder Card */}
-          <Link href="/timeline-builder">
-            <div className="p-8 bg-white rounded-2xl border border-border shadow-lg hover:shadow-xl transition-all cursor-pointer h-full group">
-              <div className="text-5xl mb-4">📋</div>
-              <h3 className="text-2xl font-bold mb-2 text-primary group-hover:text-blue-600">Timeline Builder</h3>
-              <p className="text-gray-600 mb-4">Create beautiful project timelines with steps and progress tracking</p>
-              <div className="flex items-center gap-2 text-blue-600 font-semibold group-hover:gap-3 transition-all">
-                Launch <ArrowRight size={20} />
-              </div>
+        <Link href="/milestone-builder" className="max-w-2xl mx-auto w-full">
+          <div className="p-8 bg-white rounded-2xl border border-border shadow-lg hover:shadow-xl transition-all cursor-pointer h-full group">
+            <div className="text-5xl mb-4">🎯</div>
+            <h3 className="text-2xl font-bold mb-2 text-primary group-hover:text-blue-600">Milestone Flow Diagram</h3>
+            <p className="text-gray-600 mb-4">Interactive canvas with zoom, pan, drag, undo/redo, and full customization. Export as PNG.</p>
+            <div className="flex items-center gap-2 text-blue-600 font-semibold group-hover:gap-3 transition-all">
+              Get Started <ArrowRight size={20} />
             </div>
-          </Link>
-
-          {/* Milestone Flow Card */}
-          <Link href="/milestone-builder">
-            <div className="p-8 bg-white rounded-2xl border border-border shadow-lg hover:shadow-xl transition-all cursor-pointer h-full group">
-              <div className="text-5xl mb-4">🎯</div>
-              <h3 className="text-2xl font-bold mb-2 text-primary group-hover:text-blue-600">Milestone Flow</h3>
-              <p className="text-gray-600 mb-4">Interactive canvas with zoom, pan, drag, and full customization</p>
-              <div className="flex items-center gap-2 text-blue-600 font-semibold group-hover:gap-3 transition-all">
-                Launch <ArrowRight size={20} />
-              </div>
-            </div>
-          </Link>
-        </div>
+          </div>
+        </Link>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8">
           <div className="p-6 bg-white rounded-lg border border-border shadow-sm">

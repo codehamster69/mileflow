@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useMemo } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -14,6 +14,8 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { MilestoneNode, type MilestoneData } from './milestone-node';
 import { MilestoneEditorPanel } from './milestone-editor-panel';
+import { CommandHistory, type CommandState } from '@/lib/command-history';
+import { Undo2, Redo2 } from 'lucide-react';
 
 const nodeTypes = {
   milestone: MilestoneNode,
@@ -83,8 +85,13 @@ export function MilestoneCanvas() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node<MilestoneData> | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const historyRef = useRef(new CommandHistory());
+  const undobleRef = useRef(() => {});
+  const redoRef = useRef(() => {});
 
-  const memoizedNodeTypes = useMemo(() => nodeTypes, []);
+
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -134,12 +141,75 @@ export function MilestoneCanvas() {
   const handleDeleteNode = useCallback(() => {
     if (!selectedNode) return;
 
-    setNodes((nds) => nds.filter((n) => n.id !== selectedNode.id));
-    setEdges((eds) =>
-      eds.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id)
-    );
+    const deletedNode = selectedNode;
+    const deletedEdges = edges.filter((e) => e.source === deletedNode.id || e.target === deletedNode.id);
+
+    const command = {
+      type: 'delete-node' as const,
+      timestamp: Date.now(),
+      execute: (state: CommandState) => ({
+        ...state,
+        nodes: state.nodes.filter((n) => n.id !== deletedNode.id),
+        edges: state.edges.filter((e) => e.source !== deletedNode.id && e.target !== deletedNode.id),
+      }),
+      undo: (state: CommandState) => ({
+        ...state,
+        nodes: [...state.nodes, deletedNode],
+        edges: [...state.edges, ...deletedEdges],
+      }),
+    };
+
+    const currentState = { nodes, edges };
+    const newState = historyRef.current.execute(command, currentState);
+    
+    setNodes(newState.nodes);
+    setEdges(newState.edges);
     setSelectedNode(null);
-  }, [selectedNode, setNodes, setEdges]);
+    setCanUndo(historyRef.current.canUndo());
+    setCanRedo(historyRef.current.canRedo());
+  }, [selectedNode, nodes, edges, setNodes, setEdges]);
+
+  const handleUndo = useCallback(() => {
+    const currentState = { nodes, edges };
+    const { newState, canUndo: canUndoAfter } = historyRef.current.undo(currentState);
+    
+    setNodes(newState.nodes);
+    setEdges(newState.edges);
+    setCanUndo(canUndoAfter);
+    setCanRedo(historyRef.current.canRedo());
+  }, [nodes, edges, setNodes, setEdges]);
+
+  const handleRedo = useCallback(() => {
+    const currentState = { nodes, edges };
+    const { newState, canRedo: canRedoAfter } = historyRef.current.redo(currentState);
+    
+    setNodes(newState.nodes);
+    setEdges(newState.edges);
+    setCanUndo(historyRef.current.canUndo());
+    setCanRedo(canRedoAfter);
+  }, [nodes, edges, setNodes, setEdges]);
+
+  // Update refs for keyboard handler
+  useEffect(() => {
+    undobleRef.current = handleUndo;
+    redoRef.current = handleRedo;
+  }, [handleUndo, handleRedo]);
+
+  // Set up keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undobleRef.current();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        redoRef.current();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handlePaneClick = useCallback(() => {
     setSelectedNode(null);
@@ -147,7 +217,30 @@ export function MilestoneCanvas() {
 
   return (
     <div className="flex h-full w-full bg-gradient-to-br from-blue-50 to-indigo-50">
-      <div className="flex-1">
+      <div className="flex-1 relative">
+        {/* Undo/Redo Toolbar */}
+        <div className="absolute top-4 left-4 z-50 flex gap-2 bg-white rounded-lg shadow-md p-2 border border-gray-200">
+          <button
+            onClick={handleUndo}
+            disabled={!canUndo}
+            className="p-2 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Undo (Ctrl+Z)"
+            aria-label="Undo"
+          >
+            <Undo2 size={20} className="text-gray-700" />
+          </button>
+          <div className="w-px bg-gray-200" />
+          <button
+            onClick={handleRedo}
+            disabled={!canRedo}
+            className="p-2 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Redo (Ctrl+Y)"
+            aria-label="Redo"
+          >
+            <Redo2 size={20} className="text-gray-700" />
+          </button>
+        </div>
+
         <ReactFlow
           nodes={nodes.map((node) => ({
             ...node,
@@ -160,7 +253,7 @@ export function MilestoneCanvas() {
           onConnect={onConnect}
           onNodeClick={handleNodeClick}
           onPaneClick={handlePaneClick}
-          nodeTypes={memoizedNodeTypes}
+          nodeTypes={nodeTypes}
           fitView
         >
           <Background />
