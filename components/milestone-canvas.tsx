@@ -118,6 +118,35 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
     [setEdges]
   );
 
+  const handleEdgeUpdate = useCallback(
+    (oldEdge: Edge, newConnection: Connection) => {
+      if (!newConnection.source || !newConnection.target) {
+        return;
+      }
+      const nextSource = newConnection.source;
+      const nextTarget = newConnection.target;
+      const nextSourceHandle = newConnection.sourceHandle ?? null;
+      const nextTargetHandle = newConnection.targetHandle ?? null;
+
+      setEdges((eds) =>
+        eds.map((edge) =>
+          edge.id === oldEdge.id
+            ? {
+                ...edge,
+                source: nextSource,
+                target: nextTarget,
+                sourceHandle: nextSourceHandle,
+                targetHandle: nextTargetHandle,
+                animated: true,
+              }
+            : edge
+        )
+      );
+      setSelectedEdgeIds([oldEdge.id]);
+    },
+    [setEdges]
+  );
+
   const handleNodeClick = useCallback(
     (_: any, node: Node<MilestoneData>) => {
       setSelectedNodeIds([node.id]);
@@ -643,12 +672,14 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
           nodes={nodes.map((node) => ({ ...node, type: 'milestone' }))}
           edges={edges.map((edge) => ({
             ...edge,
+            reconnectable: true,
             style: selectedEdgeIds.includes(edge.id)
               ? { ...(edge.style || {}), stroke: '#2563eb', strokeWidth: 3 }
               : { stroke: '#64748b', strokeWidth: 2, ...(edge.style || {}) },
           }))}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onEdgeUpdate={handleEdgeUpdate}
           onConnect={onConnect}
           onNodeClick={handleNodeClick}
           onNodeDrag={handleNodeDrag}
@@ -663,6 +694,7 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
           fitView
           minZoom={0.01}
           maxZoom={3}
+          edgesUpdatable
           onMoveEnd={handleViewportChange}
           onInit={(instance) => {
             reactFlowRef.current = instance;
