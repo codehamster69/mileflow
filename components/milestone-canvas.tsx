@@ -4,6 +4,8 @@ import { useCallback, useState, useRef, useEffect, forwardRef, useImperativeHand
 import ReactFlow, {
   Node,
   Edge,
+  ReactFlowInstance,
+  Viewport,
   addEdge,
   useNodesState,
   useEdgesState,
@@ -16,7 +18,7 @@ import 'reactflow/dist/style.css';
 import { MilestoneNode, type MilestoneData } from './milestone-node';
 import { MilestoneEditorPanel } from './milestone-editor-panel';
 import { CommandHistory, type CommandState } from '@/lib/command-history';
-import { Undo2, Redo2, Plus, Trash2, Hand, MousePointer } from 'lucide-react';
+import { Undo2, Redo2, Plus, Trash2, Hand, MousePointer, LocateFixed } from 'lucide-react';
 
 const nodeTypes = {
   milestone: MilestoneNode,
@@ -30,6 +32,7 @@ const initialNodes: Node<MilestoneData>[] = [
       description: 'Define scope, goals, and requirements for the project',
       status: 'completed',
       color: '#dcfce7',
+      textColor: '#111827',
     },
     position: { x: 0, y: 0 },
   },
@@ -40,6 +43,7 @@ const initialNodes: Node<MilestoneData>[] = [
       description: 'Create wireframes, mockups, and design system',
       status: 'completed',
       color: '#dcfce7',
+      textColor: '#111827',
     },
     position: { x: 300, y: -100 },
   },
@@ -50,6 +54,7 @@ const initialNodes: Node<MilestoneData>[] = [
       description: 'Build and implement the solution',
       status: 'pending',
       color: '#fef3c7',
+      textColor: '#111827',
     },
     position: { x: 600, y: 0 },
   },
@@ -60,6 +65,7 @@ const initialNodes: Node<MilestoneData>[] = [
       description: 'Quality assurance and bug fixes',
       status: 'pending',
       color: '#fce7f3',
+      textColor: '#111827',
     },
     position: { x: 900, y: -100 },
   },
@@ -70,6 +76,7 @@ const initialNodes: Node<MilestoneData>[] = [
       description: 'Deploy to production and monitor',
       status: 'pending',
       color: '#e0f2fe',
+      textColor: '#111827',
     },
     position: { x: 1200, y: 0 },
   },
@@ -97,6 +104,13 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
   const historyRef = useRef(new CommandHistory());
   const undobleRef = useRef(() => {});
   const redoRef = useRef(() => {});
+  const reactFlowRef = useRef<ReactFlowInstance | null>(null);
+  const canvasViewportRef = useRef<HTMLDivElement | null>(null);
+  const [isFocusRecommended, setIsFocusRecommended] = useState(false);
+  const [alignmentGuide, setAlignmentGuide] = useState<{ x: number | null; y: number | null }>({
+    x: null,
+    y: null,
+  });
   const onConnect = useCallback(
     (connection: Connection) => {
       setEdges((eds) => addEdge({ ...connection, animated: true }, eds));
@@ -113,6 +127,8 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
 
   const selectedNodes = nodes.filter((node) => selectedNodeIds.includes(node.id));
   const selectedNode = selectedNodes.length === 1 ? selectedNodes[0] : null;
+  const selectedEdges = edges.filter((edge) => selectedEdgeIds.includes(edge.id));
+  const selectedEdge = selectedEdges.length === 1 && !selectedNode ? selectedEdges[0] : null;
 
   const handleUpdateNode = useCallback(
     (updatedNode: Node<MilestoneData>) => {
@@ -137,6 +153,7 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
         description: 'Add a description for this milestone',
         status: 'pending',
         color: '#e0f2fe',
+        textColor: '#111827',
       },
       position: newPosition,
     };
@@ -188,6 +205,14 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
     setCanRedo(historyRef.current.canRedo());
   }, [selectedNodeIds, selectedEdgeIds, nodes, edges, setNodes, setEdges]);
 
+  const handleUpdateEdge = useCallback(
+    (updatedEdge: Edge) => {
+      setEdges((eds) => eds.map((edge) => (edge.id === updatedEdge.id ? updatedEdge : edge)));
+      setSelectedEdgeIds([updatedEdge.id]);
+    },
+    [setEdges]
+  );
+
   const handleUndo = useCallback(() => {
     const currentState = { nodes, edges };
     const { newState, canUndo: canUndoAfter } = historyRef.current.undo(currentState);
@@ -214,6 +239,19 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
     redoRef.current = handleRedo;
   }, [handleUndo, handleRedo]);
 
+  const handleFocusFlow = useCallback(() => {
+    if (!reactFlowRef.current) return;
+
+    reactFlowRef.current.fitView({
+      duration: 500,
+      padding: 0.2,
+      includeHiddenNodes: true,
+      minZoom: 0.08,
+      maxZoom: 1.4,
+    });
+    setIsFocusRecommended(false);
+  }, []);
+
   // Set up keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -223,17 +261,107 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
       } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault();
         redoRef.current();
+      } else if (
+        e.key.toLowerCase() === 'f' &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        !(e.target instanceof HTMLInputElement) &&
+        !(e.target instanceof HTMLTextAreaElement)
+      ) {
+        e.preventDefault();
+        handleFocusFlow();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [handleFocusFlow]);
 
   const handlePaneClick = useCallback(() => {
     setSelectedNodeIds([]);
     setSelectedEdgeIds([]);
   }, []);
+
+  const shouldRecommendFocus = useCallback(
+    (viewport: Viewport) => {
+      if (nodes.length === 0) {
+        return false;
+      }
+
+      if (viewport.zoom <= 0.15) {
+        return true;
+      }
+
+      const viewportEl = canvasViewportRef.current;
+      if (!viewportEl) {
+        return false;
+      }
+
+      const minX = Math.min(...nodes.map((node) => node.position.x));
+      const minY = Math.min(...nodes.map((node) => node.position.y));
+      const maxX = Math.max(...nodes.map((node) => node.position.x + (node.width ?? 256)));
+      const maxY = Math.max(...nodes.map((node) => node.position.y + (node.height ?? 128)));
+
+      const boundsCenterX = (minX + maxX) / 2;
+      const boundsCenterY = (minY + maxY) / 2;
+      const boundsWidth = Math.max(maxX - minX, 1);
+      const boundsHeight = Math.max(maxY - minY, 1);
+
+      const viewportCenterX = (viewportEl.clientWidth / 2 - viewport.x) / viewport.zoom;
+      const viewportCenterY = (viewportEl.clientHeight / 2 - viewport.y) / viewport.zoom;
+
+      const outOfRangeX = Math.abs(viewportCenterX - boundsCenterX) > Math.max(boundsWidth * 1.8, 1200);
+      const outOfRangeY = Math.abs(viewportCenterY - boundsCenterY) > Math.max(boundsHeight * 1.8, 900);
+
+      return outOfRangeX || outOfRangeY;
+    },
+    [nodes]
+  );
+
+  const handleViewportChange = useCallback(
+    (_: MouseEvent | TouchEvent | null, viewport: Viewport) => {
+      setIsFocusRecommended(shouldRecommendFocus(viewport));
+    },
+    [shouldRecommendFocus]
+  );
+
+  const handleNodeDrag = useCallback(
+    (_: unknown, draggedNode: Node<MilestoneData>) => {
+      const threshold = 14;
+      let alignedX: number | null = null;
+      let alignedY: number | null = null;
+
+      nodes.forEach((node) => {
+        if (node.id === draggedNode.id) return;
+        if (Math.abs(node.position.x - draggedNode.position.x) < threshold) {
+          alignedX = node.position.x;
+        }
+        if (Math.abs(node.position.y - draggedNode.position.y) < threshold) {
+          alignedY = node.position.y;
+        }
+      });
+
+      if (alignedX !== null || alignedY !== null) {
+        setNodes((nds) =>
+          nds.map((node) =>
+            node.id === draggedNode.id
+              ? {
+                  ...node,
+                  position: {
+                    x: alignedX ?? node.position.x,
+                    y: alignedY ?? node.position.y,
+                  },
+                }
+              : node
+          )
+        );
+      }
+
+      setAlignmentGuide({ x: alignedX, y: alignedY });
+    },
+    [nodes, setNodes]
+  );
 
   const handleSelectionChange = useCallback(
     ({ nodes: selectedNodes, edges: selectedEdges }: { nodes: Node[]; edges: Edge[] }) => {
@@ -259,6 +387,12 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
     window.addEventListener('keydown', handleDeleteKey);
     return () => window.removeEventListener('keydown', handleDeleteKey);
   }, [handleDeleteSelection]);
+
+  useEffect(() => {
+    const viewport = reactFlowRef.current?.getViewport();
+    if (!viewport) return;
+    setIsFocusRecommended(shouldRecommendFocus(viewport));
+  }, [nodes, shouldRecommendFocus]);
 
   const exportAsPNG = useCallback(async () => {
     const NODE_WIDTH = 256;
@@ -362,11 +496,11 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
       ctx.fillStyle = isCompleted ? '#16a34a' : '#9ca3af';
       ctx.fill();
 
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = node.data.textColor || '#0f172a';
       ctx.font = '600 15px Inter, system-ui, sans-serif';
       wrapText(node.data.title, x + 34, y + 24, NODE_WIDTH - 48, 2);
 
-      ctx.fillStyle = '#475569';
+      ctx.fillStyle = node.data.textColor || '#475569';
       ctx.font = '400 13px Inter, system-ui, sans-serif';
       wrapText(node.data.description, x + 16, y + 52, NODE_WIDTH - 32, 4);
     });
@@ -385,9 +519,19 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
     [exportAsPNG]
   );
 
+  const viewport = reactFlowRef.current?.getViewport();
+  const alignmentX =
+    alignmentGuide.x !== null && viewport ? alignmentGuide.x * viewport.zoom + viewport.x : null;
+  const alignmentY =
+    alignmentGuide.y !== null && viewport ? alignmentGuide.y * viewport.zoom + viewport.y : null;
+
   return (
     <div className="flex h-full w-full flex-col lg:flex-row bg-gradient-to-br from-blue-50 to-indigo-50">
-      <div id="milestone-canvas-export" className="flex-1 relative min-h-[55vh] lg:min-h-0">
+      <div
+        id="milestone-canvas-export"
+        ref={canvasViewportRef}
+        className="flex-1 relative min-h-[55vh] lg:min-h-0"
+      >
         {/* Undo/Redo Toolbar */}
         <div
           className="absolute top-4 left-4 z-50 flex gap-2 bg-white rounded-lg shadow-md p-2 border border-gray-200"
@@ -451,20 +595,49 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
           >
             <Redo2 size={20} className="text-gray-700" />
           </button>
+          <div className="w-px bg-gray-200" />
+          <button
+            type="button"
+            onClick={handleFocusFlow}
+            className={`flex items-center gap-2 rounded px-3 py-2 text-sm font-medium transition-colors ${
+              isFocusRecommended
+                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            title="Focus your flow (F)"
+            aria-label="Focus diagram in viewport"
+          >
+            <LocateFixed size={16} />
+            Focus
+          </button>
         </div>
+        {alignmentGuide.x !== null && (
+          <div
+            className="pointer-events-none absolute inset-y-0 z-40 border-l-2 border-dashed border-blue-300"
+            style={{ left: `${alignmentX ?? 0}px` }}
+          />
+        )}
+        {alignmentGuide.y !== null && (
+          <div
+            className="pointer-events-none absolute inset-x-0 z-40 border-t-2 border-dashed border-blue-300"
+            style={{ top: `${alignmentY ?? 0}px` }}
+          />
+        )}
 
         <ReactFlow
           nodes={nodes.map((node) => ({ ...node, type: 'milestone' }))}
           edges={edges.map((edge) => ({
             ...edge,
             style: selectedEdgeIds.includes(edge.id)
-              ? { stroke: '#2563eb', strokeWidth: 3 }
-              : { stroke: '#64748b', strokeWidth: 2 },
+              ? { ...(edge.style || {}), stroke: '#2563eb', strokeWidth: 3 }
+              : { stroke: '#64748b', strokeWidth: 2, ...(edge.style || {}) },
           }))}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={handleNodeClick}
+          onNodeDrag={handleNodeDrag}
+          onNodeDragStop={() => setAlignmentGuide({ x: null, y: null })}
           onPaneClick={handlePaneClick}
           onSelectionChange={handleSelectionChange}
           selectionOnDrag={interactionMode === 'select'}
@@ -473,6 +646,14 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
           multiSelectionKeyCode={['Meta', 'Control', 'Shift']}
           nodeTypes={nodeTypes}
           fitView
+          minZoom={0.01}
+          maxZoom={3}
+          onMoveEnd={handleViewportChange}
+          onInit={(instance) => {
+            reactFlowRef.current = instance;
+            const viewport = instance.getViewport();
+            setIsFocusRecommended(shouldRecommendFocus(viewport));
+          }}
         >
           <Background gap={16} size={1.2} />
           <MiniMap pannable zoomable />
@@ -482,7 +663,9 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
 
       <MilestoneEditorPanel
         selectedNode={selectedNode}
+        selectedEdge={selectedEdge}
         onUpdateNode={handleUpdateNode}
+        onUpdateEdge={handleUpdateEdge}
         onAddNode={handleAddNode}
         onDeleteNode={handleDeleteSelection}
         selectedCount={selectedNodeIds.length + selectedEdgeIds.length}

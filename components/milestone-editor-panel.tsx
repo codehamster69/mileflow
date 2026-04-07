@@ -3,13 +3,15 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { Node } from 'reactflow';
+import type { Edge, Node } from 'reactflow';
 import type { MilestoneData } from './milestone-node';
 import { Plus, X } from 'lucide-react';
 
 interface MilestoneEditorPanelProps {
   selectedNode: Node<MilestoneData> | null;
+  selectedEdge: Edge | null;
   onUpdateNode: (node: Node<MilestoneData>) => void;
+  onUpdateEdge: (edge: Edge) => void;
   onAddNode: () => void;
   onDeleteNode: () => void;
   selectedCount: number;
@@ -26,7 +28,9 @@ const PRESET_COLORS = [
 
 export function MilestoneEditorPanel({
   selectedNode,
+  selectedEdge,
   onUpdateNode,
+  onUpdateEdge,
   onAddNode,
   onDeleteNode,
   selectedCount,
@@ -34,7 +38,10 @@ export function MilestoneEditorPanel({
   const [title, setTitle] = useState(selectedNode?.data.title || '');
   const [description, setDescription] = useState(selectedNode?.data.description || '');
   const [color, setColor] = useState(selectedNode?.data.color || PRESET_COLORS[0]);
+  const [textColor, setTextColor] = useState(selectedNode?.data.textColor || '#111827');
   const [status, setStatus] = useState<'completed' | 'pending'>(selectedNode?.data.status || 'pending');
+  const [edgeColor, setEdgeColor] = useState((selectedEdge?.style?.stroke as string) || '#64748b');
+  const [edgeStyle, setEdgeStyle] = useState(selectedEdge?.animated ? 'animated' : 'solid');
 
   // Sync state with selectedNode changes
   useEffect(() => {
@@ -42,14 +49,23 @@ export function MilestoneEditorPanel({
       setTitle(selectedNode.data.title);
       setDescription(selectedNode.data.description);
       setColor(selectedNode.data.color);
+      setTextColor(selectedNode.data.textColor || '#111827');
       setStatus(selectedNode.data.status);
     } else {
       setTitle('');
       setDescription('');
       setColor(PRESET_COLORS[0]);
+      setTextColor('#111827');
       setStatus('pending');
     }
   }, [selectedNode]);
+
+  useEffect(() => {
+    if (selectedEdge) {
+      setEdgeColor((selectedEdge.style?.stroke as string) || '#64748b');
+      setEdgeStyle(selectedEdge.animated ? 'animated' : 'solid');
+    }
+  }, [selectedEdge]);
 
   const handleUpdate = (overrides?: Partial<MilestoneData>) => {
     if (!selectedNode) return;
@@ -61,11 +77,77 @@ export function MilestoneEditorPanel({
         title,
         description,
         color,
+        textColor,
         status,
         ...overrides,
       },
     });
   };
+
+  const handleUpdateEdge = (overrides?: Partial<Edge>) => {
+    if (!selectedEdge) return;
+    onUpdateEdge({
+      ...selectedEdge,
+      animated: edgeStyle === 'animated',
+      style: { ...(selectedEdge.style || {}), stroke: edgeColor, strokeWidth: 2 },
+      ...overrides,
+    });
+  };
+
+  if (!selectedNode && selectedEdge) {
+    return (
+      <div className="w-full lg:w-72 lg:min-w-72 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-4 lg:p-6 flex flex-col h-auto lg:h-full max-h-[45vh] lg:max-h-none shadow-sm overflow-y-auto">
+        <h2 className="text-xl font-bold text-gray-900 mb-6">Edit Connection</h2>
+        <div className="space-y-5 flex-1">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Line Color</label>
+            <div className="flex gap-2">
+              <input
+                type="color"
+                value={edgeColor}
+                onChange={(e) => setEdgeColor(e.target.value)}
+                onBlur={() => handleUpdateEdge()}
+                className="flex-1 h-10 rounded cursor-pointer border border-gray-300"
+              />
+              <Input
+                value={edgeColor}
+                onChange={(e) => setEdgeColor(e.target.value)}
+                onBlur={() => handleUpdateEdge()}
+                className="w-24"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Line Style</label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={edgeStyle === 'solid' ? 'default' : 'outline'}
+                onClick={() => {
+                  setEdgeStyle('solid');
+                  onUpdateEdge({ ...selectedEdge, animated: false, style: { ...(selectedEdge.style || {}), stroke: edgeColor, strokeWidth: 2 } });
+                }}
+                className="flex-1"
+              >
+                Solid
+              </Button>
+              <Button
+                type="button"
+                variant={edgeStyle === 'animated' ? 'default' : 'outline'}
+                onClick={() => {
+                  setEdgeStyle('animated');
+                  onUpdateEdge({ ...selectedEdge, animated: true, style: { ...(selectedEdge.style || {}), stroke: edgeColor, strokeWidth: 2 } });
+                }}
+                className="flex-1"
+              >
+                Animated
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!selectedNode) {
     return (
@@ -110,7 +192,7 @@ export function MilestoneEditorPanel({
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            onBlur={handleUpdate}
+            onBlur={() => handleUpdate()}
             placeholder="Milestone title"
             className="w-full"
           />
@@ -122,7 +204,7 @@ export function MilestoneEditorPanel({
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            onBlur={handleUpdate}
+            onBlur={() => handleUpdate()}
             placeholder="Describe this milestone"
             rows={4}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -190,17 +272,37 @@ export function MilestoneEditorPanel({
                 type="color"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
-                onBlur={handleUpdate}
+                onBlur={() => handleUpdate()}
                 className="flex-1 h-10 rounded cursor-pointer border border-gray-300"
               />
               <Input
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
-                onBlur={handleUpdate}
+                onBlur={() => handleUpdate()}
                 placeholder="#e0f2fe"
                 className="w-24"
               />
             </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Text Color</label>
+          <div className="flex gap-2">
+            <input
+              type="color"
+              value={textColor}
+              onChange={(e) => setTextColor(e.target.value)}
+              onBlur={() => handleUpdate()}
+              className="flex-1 h-10 rounded cursor-pointer border border-gray-300"
+            />
+            <Input
+              value={textColor}
+              onChange={(e) => setTextColor(e.target.value)}
+              onBlur={() => handleUpdate()}
+              placeholder="#111827"
+              className="w-24"
+            />
           </div>
         </div>
       </div>
