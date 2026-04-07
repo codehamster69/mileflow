@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -14,6 +14,10 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { MilestoneNode, type MilestoneData } from './milestone-node';
 import { MilestoneEditorPanel } from './milestone-editor-panel';
+
+const nodeTypes = {
+  milestone: MilestoneNode,
+};
 
 const initialNodes: Node<MilestoneData>[] = [
   {
@@ -79,10 +83,6 @@ export function MilestoneCanvas() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node<MilestoneData> | null>(null);
-
-  const nodeTypes = {
-    milestone: MilestoneNode,
-  };
 
   const onConnect = useCallback(
     (connection: Connection) => {
