@@ -32,6 +32,7 @@ const initialNodes: Node<MilestoneData>[] = [
       description: 'Define scope, goals, and requirements for the project',
       status: 'completed',
       color: '#dcfce7',
+      textColor: '#111827',
     },
     position: { x: 0, y: 0 },
   },
@@ -42,6 +43,7 @@ const initialNodes: Node<MilestoneData>[] = [
       description: 'Create wireframes, mockups, and design system',
       status: 'completed',
       color: '#dcfce7',
+      textColor: '#111827',
     },
     position: { x: 300, y: -100 },
   },
@@ -52,6 +54,7 @@ const initialNodes: Node<MilestoneData>[] = [
       description: 'Build and implement the solution',
       status: 'pending',
       color: '#fef3c7',
+      textColor: '#111827',
     },
     position: { x: 600, y: 0 },
   },
@@ -62,6 +65,7 @@ const initialNodes: Node<MilestoneData>[] = [
       description: 'Quality assurance and bug fixes',
       status: 'pending',
       color: '#fce7f3',
+      textColor: '#111827',
     },
     position: { x: 900, y: -100 },
   },
@@ -72,6 +76,7 @@ const initialNodes: Node<MilestoneData>[] = [
       description: 'Deploy to production and monitor',
       status: 'pending',
       color: '#e0f2fe',
+      textColor: '#111827',
     },
     position: { x: 1200, y: 0 },
   },
@@ -102,6 +107,10 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
   const canvasViewportRef = useRef<HTMLDivElement | null>(null);
   const [isFocusRecommended, setIsFocusRecommended] = useState(false);
+  const [alignmentGuide, setAlignmentGuide] = useState<{ x: number | null; y: number | null }>({
+    x: null,
+    y: null,
+  });
   const onConnect = useCallback(
     (connection: Connection) => {
       setEdges((eds) => addEdge({ ...connection, animated: true }, eds));
@@ -118,6 +127,8 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
 
   const selectedNodes = nodes.filter((node) => selectedNodeIds.includes(node.id));
   const selectedNode = selectedNodes.length === 1 ? selectedNodes[0] : null;
+  const selectedEdges = edges.filter((edge) => selectedEdgeIds.includes(edge.id));
+  const selectedEdge = selectedEdges.length === 1 && !selectedNode ? selectedEdges[0] : null;
 
   const handleUpdateNode = useCallback(
     (updatedNode: Node<MilestoneData>) => {
@@ -142,6 +153,7 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
         description: 'Add a description for this milestone',
         status: 'pending',
         color: '#e0f2fe',
+        textColor: '#111827',
       },
       position: newPosition,
     };
@@ -192,6 +204,14 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
     setCanUndo(historyRef.current.canUndo());
     setCanRedo(historyRef.current.canRedo());
   }, [selectedNodeIds, selectedEdgeIds, nodes, edges, setNodes, setEdges]);
+
+  const handleUpdateEdge = useCallback(
+    (updatedEdge: Edge) => {
+      setEdges((eds) => eds.map((edge) => (edge.id === updatedEdge.id ? updatedEdge : edge)));
+      setSelectedEdgeIds([updatedEdge.id]);
+    },
+    [setEdges]
+  );
 
   const handleUndo = useCallback(() => {
     const currentState = { nodes, edges };
@@ -304,6 +324,43 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
       setIsFocusRecommended(shouldRecommendFocus(viewport));
     },
     [shouldRecommendFocus]
+  );
+
+  const handleNodeDrag = useCallback(
+    (_: unknown, draggedNode: Node<MilestoneData>) => {
+      const threshold = 14;
+      let alignedX: number | null = null;
+      let alignedY: number | null = null;
+
+      nodes.forEach((node) => {
+        if (node.id === draggedNode.id) return;
+        if (Math.abs(node.position.x - draggedNode.position.x) < threshold) {
+          alignedX = node.position.x;
+        }
+        if (Math.abs(node.position.y - draggedNode.position.y) < threshold) {
+          alignedY = node.position.y;
+        }
+      });
+
+      if (alignedX !== null || alignedY !== null) {
+        setNodes((nds) =>
+          nds.map((node) =>
+            node.id === draggedNode.id
+              ? {
+                  ...node,
+                  position: {
+                    x: alignedX ?? node.position.x,
+                    y: alignedY ?? node.position.y,
+                  },
+                }
+              : node
+          )
+        );
+      }
+
+      setAlignmentGuide({ x: alignedX, y: alignedY });
+    },
+    [nodes, setNodes]
   );
 
   const handleSelectionChange = useCallback(
@@ -439,11 +496,11 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
       ctx.fillStyle = isCompleted ? '#16a34a' : '#9ca3af';
       ctx.fill();
 
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = node.data.textColor || '#0f172a';
       ctx.font = '600 15px Inter, system-ui, sans-serif';
       wrapText(node.data.title, x + 34, y + 24, NODE_WIDTH - 48, 2);
 
-      ctx.fillStyle = '#475569';
+      ctx.fillStyle = node.data.textColor || '#475569';
       ctx.font = '400 13px Inter, system-ui, sans-serif';
       wrapText(node.data.description, x + 16, y + 52, NODE_WIDTH - 32, 4);
     });
@@ -461,6 +518,12 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
     }),
     [exportAsPNG]
   );
+
+  const viewport = reactFlowRef.current?.getViewport();
+  const alignmentX =
+    alignmentGuide.x !== null && viewport ? alignmentGuide.x * viewport.zoom + viewport.x : null;
+  const alignmentY =
+    alignmentGuide.y !== null && viewport ? alignmentGuide.y * viewport.zoom + viewport.y : null;
 
   return (
     <div className="flex h-full w-full flex-col lg:flex-row bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -532,7 +595,34 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
           >
             <Redo2 size={20} className="text-gray-700" />
           </button>
+          <div className="w-px bg-gray-200" />
+          <button
+            type="button"
+            onClick={handleFocusFlow}
+            className={`flex items-center gap-2 rounded px-3 py-2 text-sm font-medium transition-colors ${
+              isFocusRecommended
+                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            title="Focus your flow (F)"
+            aria-label="Focus diagram in viewport"
+          >
+            <LocateFixed size={16} />
+            Focus
+          </button>
         </div>
+        {alignmentGuide.x !== null && (
+          <div
+            className="pointer-events-none absolute inset-y-0 z-40 border-l-2 border-dashed border-blue-300"
+            style={{ left: `${alignmentX ?? 0}px` }}
+          />
+        )}
+        {alignmentGuide.y !== null && (
+          <div
+            className="pointer-events-none absolute inset-x-0 z-40 border-t-2 border-dashed border-blue-300"
+            style={{ top: `${alignmentY ?? 0}px` }}
+          />
+        )}
 
         <button
           type="button"
@@ -554,13 +644,15 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
           edges={edges.map((edge) => ({
             ...edge,
             style: selectedEdgeIds.includes(edge.id)
-              ? { stroke: '#2563eb', strokeWidth: 3 }
-              : { stroke: '#64748b', strokeWidth: 2 },
+              ? { ...(edge.style || {}), stroke: '#2563eb', strokeWidth: 3 }
+              : { stroke: '#64748b', strokeWidth: 2, ...(edge.style || {}) },
           }))}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={handleNodeClick}
+          onNodeDrag={handleNodeDrag}
+          onNodeDragStop={() => setAlignmentGuide({ x: null, y: null })}
           onPaneClick={handlePaneClick}
           onSelectionChange={handleSelectionChange}
           selectionOnDrag={interactionMode === 'select'}
@@ -586,7 +678,9 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
 
       <MilestoneEditorPanel
         selectedNode={selectedNode}
+        selectedEdge={selectedEdge}
         onUpdateNode={handleUpdateNode}
+        onUpdateEdge={handleUpdateEdge}
         onAddNode={handleAddNode}
         onDeleteNode={handleDeleteSelection}
         selectedCount={selectedNodeIds.length + selectedEdgeIds.length}
