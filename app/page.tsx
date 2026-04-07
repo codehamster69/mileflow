@@ -1,13 +1,21 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
+import { GitHubStarButton } from '@/components/github-star-button';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-      <div className="max-w-4xl mx-auto px-6 text-center space-y-12">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+      <header className="h-16 border-b border-blue-100 bg-white/80 backdrop-blur-sm px-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <img src="/icon.svg" alt="MileFlow logo" className="h-8 w-8" />
+          <span className="text-lg font-bold text-primary">MileFlow</span>
+        </div>
+        <GitHubStarButton />
+      </header>
+
+      <div className="max-w-4xl mx-auto px-6 py-14 text-center space-y-12">
         <div className="space-y-4">
-          <h1 className="text-5xl font-bold text-primary">Diagram Builder</h1>
+          <h1 className="text-5xl font-bold text-primary">MileFlow</h1>
           <p className="text-xl text-muted-foreground">
             Create professional milestone flow diagrams with an interactive canvas. Customize, visualize, and export as PNG.
           </p>
@@ -49,6 +57,14 @@ export default function Home() {
             </p>
           </div>
         </div>
+
+        <p className="text-sm text-muted-foreground">
+          Credits: Built and maintained by{' '}
+          <a href="https://github.com/codehamster69" target="_blank" rel="noreferrer" className="font-semibold text-primary hover:underline">
+            @codehamster69
+          </a>
+          .
+        </p>
       </div>
     </div>
   );

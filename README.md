@@ -1,10 +1,18 @@
 # mileflow-xe
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
+MileFlow is a [Next.js](https://nextjs.org) project for building and exporting milestone flow diagrams.
 
-## Built with v0
+## Credits
 
-This repository is linked to a [v0](https://v0.app) project. You can continue developing by visiting the link below -- start new chats to make changes, and v0 will push commits directly to this repo. Every merge to `main` will automatically deploy.
+Project creator and maintainer: [@codehamster69](https://github.com/codehamster69).
+
+If you find MileFlow useful, please star the repository:
+
+- [⭐ Star MileFlow on GitHub](https://github.com/codehamster69/mileflow-xe)
+
+## v0 Project Link
+
+This repository is linked to a [v0](https://v0.app) project.
 
 [Continue working on v0 →](https://v0.app/chat/projects/prj_4vqcQeiPZvb8gKRuxk5EdDzg7BdG)
 

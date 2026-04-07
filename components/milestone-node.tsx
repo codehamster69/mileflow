@@ -13,20 +13,20 @@ export interface MilestoneData {
 
 interface MilestoneNodeProps {
   data: MilestoneData;
-  isSelected: boolean;
+  selected?: boolean;
 }
 
-export function MilestoneNode({ data, isSelected }: MilestoneNodeProps) {
+export function MilestoneNode({ data, selected }: MilestoneNodeProps) {
   const isCompleted = data.status === 'completed';
   const statusColor = isCompleted ? '#16a34a' : '#9ca3af';
-  const bgOpacity = isSelected ? 'opacity-100' : 'opacity-90';
+  const bgOpacity = selected ? 'opacity-100' : 'opacity-90';
 
   return (
     <div
       className={`relative px-6 py-4 rounded-xl border-2 shadow-lg transition-all cursor-pointer ${bgOpacity}`}
       style={{
         backgroundColor: data.color || '#e0f2fe',
-        borderColor: isSelected ? '#0284c7' : '#bfdbfe',
+        borderColor: selected ? '#0284c7' : '#bfdbfe',
       }}
     >
       <Handle type="target" position={Position.Left} />
