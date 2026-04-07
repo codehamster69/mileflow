@@ -260,7 +260,10 @@ export function MilestoneCanvas() {
     <div className="flex h-full w-full bg-gradient-to-br from-blue-50 to-indigo-50">
       <div id="milestone-canvas-export" className="flex-1 relative">
         {/* Undo/Redo Toolbar */}
-        <div className="absolute top-4 left-4 z-50 flex gap-2 bg-white rounded-lg shadow-md p-2 border border-gray-200">
+        <div
+          className="absolute top-4 left-4 z-50 flex gap-2 bg-white rounded-lg shadow-md p-2 border border-gray-200"
+          data-export-exclude
+        >
           <button
             onClick={() => setInteractionMode('pan')}
             className={`p-2 rounded transition-colors ${

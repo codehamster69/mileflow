@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { MilestoneCanvas } from '@/components/milestone-canvas';
 import html2canvas from 'html2canvas';
-import { Download, Home, Star } from 'lucide-react';
+import { Download, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { GitHubStarButton } from '@/components/github-star-button';
@@ -22,19 +22,19 @@ export default function MilestoneBuilderPage() {
       }
 
       const controls = canvas.querySelectorAll(
-        '.react-flow__controls, .react-flow__minimap, .react-flow__panel, .react-flow__attribution'
+        '[data-export-exclude], .react-flow__controls, .react-flow__minimap, .react-flow__panel, .react-flow__attribution, .react-flow__background'
       );
       controls.forEach((el) => ((el as HTMLElement).style.visibility = 'hidden'));
       try {
         const image = await html2canvas(canvas, {
-          backgroundColor: '#f0f9ff',
+          backgroundColor: null,
           scale: 2,
           logging: false,
           useCORS: true,
           onclone: (doc) => {
             doc
               .querySelectorAll(
-                '.react-flow__controls, .react-flow__minimap, .react-flow__panel, .react-flow__attribution'
+                '[data-export-exclude], .react-flow__controls, .react-flow__minimap, .react-flow__panel, .react-flow__attribution, .react-flow__background'
               )
               .forEach((el) => {
                 (el as HTMLElement).style.display = 'none';
