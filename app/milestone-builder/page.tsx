@@ -1,54 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { MilestoneCanvas } from '@/components/milestone-canvas';
-import html2canvas from 'html2canvas';
+import { MilestoneCanvas, type MilestoneCanvasHandle } from '@/components/milestone-canvas';
 import { Download, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { GitHubStarButton } from '@/components/github-star-button';
+import { useRef } from 'react';
 
 export default function MilestoneBuilderPage() {
   const [isExporting, setIsExporting] = useState(false);
+  const canvasRef = useRef<MilestoneCanvasHandle>(null);
 
   const handleExportPNG = async () => {
     try {
       setIsExporting(true);
-      const canvas = document.getElementById('milestone-canvas-export') as HTMLElement | null;
-
-      if (!canvas) {
-        alert('Canvas not found');
+      if (!canvasRef.current) {
+        alert('Canvas not ready yet. Please try again.');
         return;
       }
-
-      const controls = canvas.querySelectorAll(
-        '[data-export-exclude], .react-flow__controls, .react-flow__minimap, .react-flow__panel, .react-flow__attribution, .react-flow__background'
-      );
-      controls.forEach((el) => ((el as HTMLElement).style.visibility = 'hidden'));
-      try {
-        const image = await html2canvas(canvas, {
-          backgroundColor: null,
-          scale: 2,
-          logging: false,
-          useCORS: true,
-          onclone: (doc) => {
-            doc
-              .querySelectorAll(
-                '[data-export-exclude], .react-flow__controls, .react-flow__minimap, .react-flow__panel, .react-flow__attribution, .react-flow__background'
-              )
-              .forEach((el) => {
-                (el as HTMLElement).style.display = 'none';
-              });
-          },
-        });
-
-        const link = document.createElement('a');
-        link.href = image.toDataURL('image/png');
-        link.download = `milestone-flow-${new Date().toISOString().split('T')[0]}.png`;
-        link.click();
-      } finally {
-        controls.forEach((el) => ((el as HTMLElement).style.visibility = 'visible'));
-      }
+      await canvasRef.current.exportAsPNG();
     } catch (error) {
       console.error('Export failed:', error);
       alert('Failed to export. Please try again.');
@@ -90,7 +61,7 @@ export default function MilestoneBuilderPage() {
 
       {/* Canvas Area */}
       <div className="flex-1 overflow-hidden">
-        <MilestoneCanvas />
+        <MilestoneCanvas ref={canvasRef} />
       </div>
 
       {/* Help Text */}
