@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { MilestoneCanvas } from '@/components/milestone-canvas';
 import html2canvas from 'html2canvas';
-import { Download, Home } from 'lucide-react';
+import { Download, Home, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
@@ -49,10 +49,19 @@ export default function MilestoneBuilderPage() {
               Home
             </Button>
           </Link>
-          <h1 className="text-xl font-bold text-gray-900">Milestone Flow Diagram</h1>
+          <div className="flex items-center gap-2">
+            <img src="/icon.svg" alt="MileFlow logo" className="h-7 w-7" />
+            <h1 className="text-xl font-bold text-gray-900">MileFlow</h1>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
+          <a href="https://github.com/codehamster69/mileflow-xe" target="_blank" rel="noreferrer">
+            <Button variant="outline" className="gap-2">
+              <Star size={18} />
+              Star Repository
+            </Button>
+          </a>
           <Button
             onClick={handleExportPNG}
             disabled={isExporting}
@@ -72,6 +81,12 @@ export default function MilestoneBuilderPage() {
 
       {/* Help Text */}
       <div className="absolute bottom-4 left-4 text-sm text-gray-600 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200 max-w-xs">
+        <p className="text-xs text-gray-500 mb-1">
+          Credits:{' '}
+          <a href="https://github.com/codehamster69" target="_blank" rel="noreferrer" className="font-semibold hover:underline">
+            @codehamster69
+          </a>
+        </p>
         <p className="font-semibold text-gray-900 mb-1">Tips:</p>
         <ul className="text-xs space-y-1 text-gray-600">
           <li>• Click milestones to edit them</li>
