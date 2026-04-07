@@ -4,6 +4,8 @@ import { useCallback, useState, useRef, useEffect, forwardRef, useImperativeHand
 import ReactFlow, {
   Node,
   Edge,
+  ReactFlowInstance,
+  Viewport,
   addEdge,
   useNodesState,
   useEdgesState,
@@ -16,7 +18,7 @@ import 'reactflow/dist/style.css';
 import { MilestoneNode, type MilestoneData } from './milestone-node';
 import { MilestoneEditorPanel } from './milestone-editor-panel';
 import { CommandHistory, type CommandState } from '@/lib/command-history';
-import { Undo2, Redo2, Plus, Trash2, Hand, MousePointer } from 'lucide-react';
+import { Undo2, Redo2, Plus, Trash2, Hand, MousePointer, LocateFixed } from 'lucide-react';
 
 const nodeTypes = {
   milestone: MilestoneNode,
@@ -97,6 +99,9 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
   const historyRef = useRef(new CommandHistory());
   const undobleRef = useRef(() => {});
   const redoRef = useRef(() => {});
+  const reactFlowRef = useRef<ReactFlowInstance | null>(null);
+  const canvasViewportRef = useRef<HTMLDivElement | null>(null);
+  const [isFocusRecommended, setIsFocusRecommended] = useState(false);
   const onConnect = useCallback(
     (connection: Connection) => {
       setEdges((eds) => addEdge({ ...connection, animated: true }, eds));
@@ -214,6 +219,19 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
     redoRef.current = handleRedo;
   }, [handleUndo, handleRedo]);
 
+  const handleFocusFlow = useCallback(() => {
+    if (!reactFlowRef.current) return;
+
+    reactFlowRef.current.fitView({
+      duration: 500,
+      padding: 0.2,
+      includeHiddenNodes: true,
+      minZoom: 0.08,
+      maxZoom: 1.4,
+    });
+    setIsFocusRecommended(false);
+  }, []);
+
   // Set up keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -223,17 +241,70 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
       } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault();
         redoRef.current();
+      } else if (
+        e.key.toLowerCase() === 'f' &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        !(e.target instanceof HTMLInputElement) &&
+        !(e.target instanceof HTMLTextAreaElement)
+      ) {
+        e.preventDefault();
+        handleFocusFlow();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [handleFocusFlow]);
 
   const handlePaneClick = useCallback(() => {
     setSelectedNodeIds([]);
     setSelectedEdgeIds([]);
   }, []);
+
+  const shouldRecommendFocus = useCallback(
+    (viewport: Viewport) => {
+      if (nodes.length === 0) {
+        return false;
+      }
+
+      if (viewport.zoom <= 0.15) {
+        return true;
+      }
+
+      const viewportEl = canvasViewportRef.current;
+      if (!viewportEl) {
+        return false;
+      }
+
+      const minX = Math.min(...nodes.map((node) => node.position.x));
+      const minY = Math.min(...nodes.map((node) => node.position.y));
+      const maxX = Math.max(...nodes.map((node) => node.position.x + (node.width ?? 256)));
+      const maxY = Math.max(...nodes.map((node) => node.position.y + (node.height ?? 128)));
+
+      const boundsCenterX = (minX + maxX) / 2;
+      const boundsCenterY = (minY + maxY) / 2;
+      const boundsWidth = Math.max(maxX - minX, 1);
+      const boundsHeight = Math.max(maxY - minY, 1);
+
+      const viewportCenterX = (viewportEl.clientWidth / 2 - viewport.x) / viewport.zoom;
+      const viewportCenterY = (viewportEl.clientHeight / 2 - viewport.y) / viewport.zoom;
+
+      const outOfRangeX = Math.abs(viewportCenterX - boundsCenterX) > Math.max(boundsWidth * 1.8, 1200);
+      const outOfRangeY = Math.abs(viewportCenterY - boundsCenterY) > Math.max(boundsHeight * 1.8, 900);
+
+      return outOfRangeX || outOfRangeY;
+    },
+    [nodes]
+  );
+
+  const handleViewportChange = useCallback(
+    (_: MouseEvent | TouchEvent | null, viewport: Viewport) => {
+      setIsFocusRecommended(shouldRecommendFocus(viewport));
+    },
+    [shouldRecommendFocus]
+  );
 
   const handleSelectionChange = useCallback(
     ({ nodes: selectedNodes, edges: selectedEdges }: { nodes: Node[]; edges: Edge[] }) => {
@@ -259,6 +330,12 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
     window.addEventListener('keydown', handleDeleteKey);
     return () => window.removeEventListener('keydown', handleDeleteKey);
   }, [handleDeleteSelection]);
+
+  useEffect(() => {
+    const viewport = reactFlowRef.current?.getViewport();
+    if (!viewport) return;
+    setIsFocusRecommended(shouldRecommendFocus(viewport));
+  }, [nodes, shouldRecommendFocus]);
 
   const exportAsPNG = useCallback(async () => {
     const NODE_WIDTH = 256;
@@ -387,7 +464,11 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
 
   return (
     <div className="flex h-full w-full flex-col lg:flex-row bg-gradient-to-br from-blue-50 to-indigo-50">
-      <div id="milestone-canvas-export" className="flex-1 relative min-h-[55vh] lg:min-h-0">
+      <div
+        id="milestone-canvas-export"
+        ref={canvasViewportRef}
+        className="flex-1 relative min-h-[55vh] lg:min-h-0"
+      >
         {/* Undo/Redo Toolbar */}
         <div
           className="absolute top-4 left-4 z-50 flex gap-2 bg-white rounded-lg shadow-md p-2 border border-gray-200"
@@ -453,6 +534,21 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
           </button>
         </div>
 
+        <button
+          type="button"
+          onClick={handleFocusFlow}
+          className={`absolute top-4 right-4 z-50 flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm font-medium shadow-md transition-colors ${
+            isFocusRecommended
+              ? 'border-blue-300 text-blue-700 hover:bg-blue-50'
+              : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+          }`}
+          title="Focus your flow (F)"
+          aria-label="Focus diagram in viewport"
+        >
+          <LocateFixed size={16} />
+          Focus flow
+        </button>
+
         <ReactFlow
           nodes={nodes.map((node) => ({ ...node, type: 'milestone' }))}
           edges={edges.map((edge) => ({
@@ -473,6 +569,14 @@ export const MilestoneCanvas = forwardRef<MilestoneCanvasHandle>(function Milest
           multiSelectionKeyCode={['Meta', 'Control', 'Shift']}
           nodeTypes={nodeTypes}
           fitView
+          minZoom={0.01}
+          maxZoom={3}
+          onMoveEnd={handleViewportChange}
+          onInit={(instance) => {
+            reactFlowRef.current = instance;
+            const viewport = instance.getViewport();
+            setIsFocusRecommended(shouldRecommendFocus(viewport));
+          }}
         >
           <Background gap={16} size={1.2} />
           <MiniMap pannable zoomable />

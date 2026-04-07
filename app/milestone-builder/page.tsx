@@ -65,7 +65,7 @@ export default function MilestoneBuilderPage() {
       </div>
 
       {/* Help Text */}
-      <div className="hidden md:block absolute bottom-4 left-4 text-sm text-gray-600 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200 max-w-xs">
+      <div className="hidden lg:block absolute bottom-4 left-4 text-sm text-gray-600 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200 max-w-xs z-10">
         <p className="text-xs text-gray-500 mb-1">
           Credits:{' '}
           <a href="https://github.com/codehamster69" target="_blank" rel="noreferrer" className="font-semibold hover:underline">
@@ -77,6 +77,7 @@ export default function MilestoneBuilderPage() {
           <li>• Click milestones to edit them</li>
           <li>• Use hand/pointer tools to switch pan vs drag-select</li>
           <li>• Connect nodes by dragging handles</li>
+          <li>• Press F to focus the flow when lost</li>
         </ul>
       </div>
     </div>
